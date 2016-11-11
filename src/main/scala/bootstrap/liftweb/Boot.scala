@@ -1,6 +1,7 @@
 package bootstrap.liftweb
 
 import net.liftweb._
+import net.liftweb.http.provider.HTTPRequest
 import util._
 import Helpers._
 
@@ -10,6 +11,10 @@ import js.jquery.JQueryArtifacts
 import sitemap._
 import Loc._
 import mapper._
+
+
+import net.liftweb.http._
+
 
 import code.model._
 import net.liftmodules.JQueryModule
@@ -41,6 +46,8 @@ class Boot {
     // where to search snippet
     LiftRules.addToPackages("code")
 
+    //val amp = MenuLoc(Menu.i("Impostazioni") / "amp" / "account")
+
     // Build SiteMap
     def sitemap = SiteMap(
       Menu.i("Home") / "index" >> User.AddUserMenusAfter, // the simple way to declare a menu
@@ -50,9 +57,11 @@ class Boot {
       Menu(Loc("Static", Link(List("static"), true, "/static/index"), 
 	       "Static Content")),
 
-      Menu(Loc("amp-sample", Link(List("amp-sample"), true, "/static/amp-sample"),
-        "Static Content"))
+      Menu.i("Sample amp") / "amp" / "sample" >> CalcStateless(() => { LiftRules.javaScriptSettings.request.set(() => () => Empty)
+        true})
     )
+
+
 
 
     def sitemapMutators = User.sitemapMutator
@@ -82,7 +91,16 @@ class Boot {
 
     // Use HTML5 for rendering
     LiftRules.htmlProperties.default.set((r: Req) =>
-      new Html5Properties(r.userAgent))    
+      new Html5Properties(r.userAgent))
+
+
+    LiftRules.early.append { (request: HTTPRequest) =>
+      if (request.uri.contains("/amp/")) {
+        LiftRules.autoIncludeAjaxCalc.request.set(() => (_: LiftSession) => false)
+        LiftRules.javaScriptSettings.request.set(() => Empty)
+      }
+    }
+
 
     //Lift CSP settings see http://content-security-policy.com/ and 
     //Lift API for more information.  
